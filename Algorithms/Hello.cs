@@ -45,7 +45,7 @@ namespace GPU_Algorithms.Algorithms
             outputs = new float[size];
 
             for (int i = 0; i < size; i++)
-                inputs[i] = i;
+                inputs[i] = i+5;
         }
 
         public void InitGpu(Context context, Accelerator device, bool forceCPU = false)
@@ -75,6 +75,7 @@ namespace GPU_Algorithms.Algorithms
 
         public void Run()
         {
+            inputsBuffer.CopyFromCPU(inputs);
             kernel(size, inputsBuffer, outputsBuffer);
         }
 
