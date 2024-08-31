@@ -16,7 +16,9 @@ namespace GPU_Algorithms.Algorithms
         void InitGpu(Context context, Accelerator device, bool forceCPU = false);
         void InitBuffers();
         void CompileKernels();
+        void Load();
         void Run();
         float[] GetOutputs();
+        float[] RunCpu();
     }
 }

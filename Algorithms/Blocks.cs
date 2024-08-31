@@ -1,4 +1,7 @@
-﻿using System;
+﻿// This uses blocks and prints those numbers
+// This isn't working because I can't find a good example to borrow from
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -10,7 +13,7 @@ using ILGPU.Runtime.CPU;
 
 namespace GPU_Algorithms.Algorithms
 {
-    internal class Hello : IAlgorithm
+    internal class Blocks : IAlgorithm
     {
         #region Members
 
@@ -19,7 +22,8 @@ namespace GPU_Algorithms.Algorithms
         Accelerator device;
 
         // architecture things
-        public int size = 1;
+        public int blocks = 4;
+        public int blockSize = 4;
 
         // data
         public float[] inputs;
@@ -41,11 +45,12 @@ namespace GPU_Algorithms.Algorithms
 
         public void InitCpu()
         {
-            inputs = new float[size];
-            outputs = new float[size];
+            inputs = new float[blocks * blockSize];
+            outputs = new float[blocks * blockSize];
 
-            for (int i = 0; i < size; i++)
-                inputs[i] = i+5;
+            for (int i = 0; i < blocks; i++)
+                for (int j = 0; j < blockSize; j++)
+                    inputs[i * blockSize + j] = j;
         }
 
         public void InitGpu(Context context, Accelerator device, bool forceCPU = false)
@@ -57,8 +62,8 @@ namespace GPU_Algorithms.Algorithms
 
         public void InitBuffers()
         {
-            inputsBuffer = device.Allocate1D<float>(size);
-            outputsBuffer = device.Allocate1D<float>(size);
+            inputsBuffer = device.Allocate1D<float>(blocks * blockSize);
+            outputsBuffer = device.Allocate1D<float>(blocks * blockSize);
         }
 
         public void CompileKernels()
@@ -80,7 +85,12 @@ namespace GPU_Algorithms.Algorithms
 
         public void Run()
         {
-            kernel(size, inputsBuffer, outputsBuffer);
+            // I do not understand what part of this isn't working
+
+            //device.Launch <
+            //Index1D,
+            //ArrayView1D<float, Stride1D.Dense>,
+            //ArrayView1D<float, Stride1D.Dense> > (kernel, new KernelConfig(blocks, blockSize), inputsBuffer, outputsBuffer);
         }
 
         #endregion

@@ -10,7 +10,7 @@ using ILGPU.Runtime.CPU;
 
 namespace GPU_Algorithms.Algorithms
 {
-    internal class Hello : IAlgorithm
+    internal class Sum : IAlgorithm
     {
         #region Members
 
@@ -19,19 +19,22 @@ namespace GPU_Algorithms.Algorithms
         Accelerator device;
 
         // architecture things
-        public int size = 1;
+        public int size = 1024;
 
         // data
         public float[] inputs;
+        public float[] inputs2;
         public float[] outputs;
 
         // buffers
-        protected MemoryBuffer1D<float, Stride1D.Dense> inputsBuffer;
-        protected MemoryBuffer1D<float, Stride1D.Dense> outputsBuffer;
+        protected MemoryBuffer1D<float, Stride1D.Dense> aBuffer;
+        protected MemoryBuffer1D<float, Stride1D.Dense> bBuffer;
+        protected MemoryBuffer1D<float, Stride1D.Dense> cBuffer;
 
         // kernels
         public Action<
             Index1D,
+            ArrayView1D<float, Stride1D.Dense>,
             ArrayView1D<float, Stride1D.Dense>,
             ArrayView1D<float, Stride1D.Dense>> kernel;
 
@@ -42,10 +45,14 @@ namespace GPU_Algorithms.Algorithms
         public void InitCpu()
         {
             inputs = new float[size];
+            inputs2 = new float[size];
             outputs = new float[size];
 
             for (int i = 0; i < size; i++)
-                inputs[i] = i+5;
+                inputs[i] = i;
+
+            for (int i = 0; i < size; i++)
+                inputs2[i] = size-i;
         }
 
         public void InitGpu(Context context, Accelerator device, bool forceCPU = false)
@@ -57,8 +64,9 @@ namespace GPU_Algorithms.Algorithms
 
         public void InitBuffers()
         {
-            inputsBuffer = device.Allocate1D<float>(size);
-            outputsBuffer = device.Allocate1D<float>(size);
+            aBuffer = device.Allocate1D<float>(size);
+            bBuffer = device.Allocate1D<float>(size);
+            cBuffer = device.Allocate1D<float>(size);
         }
 
         public void CompileKernels()
@@ -66,7 +74,8 @@ namespace GPU_Algorithms.Algorithms
             kernel = device.LoadAutoGroupedStreamKernel<
             Index1D,
             ArrayView1D<float, Stride1D.Dense>,
-            ArrayView1D<float, Stride1D.Dense>>(addOne);
+            ArrayView1D<float, Stride1D.Dense>,
+            ArrayView1D<float, Stride1D.Dense>>(add);
         }
 
         #endregion
@@ -75,12 +84,13 @@ namespace GPU_Algorithms.Algorithms
 
         public void Load()
         {
-            inputsBuffer.CopyFromCPU(inputs);
+            aBuffer.CopyFromCPU(inputs);
+            bBuffer.CopyFromCPU(inputs2);
         }
 
         public void Run()
         {
-            kernel(size, inputsBuffer, outputsBuffer);
+            kernel(size, aBuffer, bBuffer, cBuffer);
         }
 
         #endregion
@@ -89,7 +99,7 @@ namespace GPU_Algorithms.Algorithms
 
         public float[] GetOutputs()
         {
-            outputs = outputsBuffer.GetAsArray1D();
+            outputs = cBuffer.GetAsArray1D();
             return outputs;
         }
 
@@ -97,9 +107,9 @@ namespace GPU_Algorithms.Algorithms
 
         #region Kernels
 
-        public static void addOne(Index1D index, ArrayView1D<float, Stride1D.Dense> inputs, ArrayView1D<float, Stride1D.Dense> outputs)
+        public static void add(Index1D index, ArrayView1D<float, Stride1D.Dense> A, ArrayView1D<float, Stride1D.Dense> B, ArrayView1D<float, Stride1D.Dense> C)
         {
-            outputs[index] = inputs[index] + 1;
+            C[index] = A[index] + B[index];
         }
 
         #endregion
@@ -109,7 +119,7 @@ namespace GPU_Algorithms.Algorithms
         public float[] RunCpu()
         {
             for (int i = 0; i < inputs.Length; i++)
-                outputs[i] = inputs[i] + 1;
+                outputs[i] = inputs[i] + inputs2[i];
 
             return outputs;
         }

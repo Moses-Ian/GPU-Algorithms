@@ -69,6 +69,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Algorithms\Blocks.cs" />
+    <Compile Include="Algorithms\Sum.cs" />
     <Compile Include="Algorithms\Hello.cs" />
     <Compile Include="Algorithms\IAlgorithm.cs" />
     <Compile Include="Program.cs" />
