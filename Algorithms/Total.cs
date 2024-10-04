@@ -11,7 +11,11 @@ using ILGPU.Runtime.CPU;
 
 namespace GPU_Algorithms.Algorithms
 {
-    internal class Sum : IAlgorithm
+    /// <summary>
+    /// Adds up all of the numbers in an array. 
+    /// The result is an array where each element k is the sum of all elements 0 through k.
+    /// </summary>
+    internal class Total : IAlgorithm
     {
         #region Members
 
@@ -20,24 +24,19 @@ namespace GPU_Algorithms.Algorithms
         Accelerator device;
 
         // architecture things
-        public int size = 1024;
-
+        public int size = 512;  // arrays can't be bigger than 512 or else they break
+        
         // data
         public float[] inputs;
-        public float[] inputs2;
         public float[] outputsGpu;
         public float[] outputsCpu;
 
         // buffers
         protected MemoryBuffer1D<float, Stride1D.Dense> aBuffer;
-        protected MemoryBuffer1D<float, Stride1D.Dense> bBuffer;
-        protected MemoryBuffer1D<float, Stride1D.Dense> cBuffer;
 
         // kernels
         public Action<
             Index1D,
-            ArrayView1D<float, Stride1D.Dense>,
-            ArrayView1D<float, Stride1D.Dense>,
             ArrayView1D<float, Stride1D.Dense>> kernel;
 
         #endregion
@@ -47,14 +46,10 @@ namespace GPU_Algorithms.Algorithms
         public void InitCpu()
         {
             inputs = new float[size];
-            inputs2 = new float[size];
             outputsCpu = new float[size];
 
             for (int i = 0; i < size; i++)
-                inputs[i] = 1;
-
-            for (int i = 0; i < size; i++)
-                inputs2[i] = size-i;
+                inputs[i] = i;
         }
 
         public void InitGpu(Context context, Accelerator device, bool forceCPU = false)
@@ -69,17 +64,13 @@ namespace GPU_Algorithms.Algorithms
         public void InitBuffers()
         {
             aBuffer = device.Allocate1D<float>(size);
-            bBuffer = device.Allocate1D<float>(size);
-            cBuffer = device.Allocate1D<float>(size);
         }
 
         public void CompileKernels()
         {
             kernel = device.LoadAutoGroupedStreamKernel<
             Index1D,
-            ArrayView1D<float, Stride1D.Dense>,
-            ArrayView1D<float, Stride1D.Dense>,
-            ArrayView1D<float, Stride1D.Dense>>(add);
+            ArrayView1D<float, Stride1D.Dense>>(total);
         }
 
         #endregion
@@ -89,12 +80,11 @@ namespace GPU_Algorithms.Algorithms
         public void Load()
         {
             aBuffer.CopyFromCPU(inputs);
-            bBuffer.CopyFromCPU(inputs2);
         }
 
         public void Run()
         {
-            kernel(size, aBuffer, bBuffer, cBuffer);
+            kernel(size, aBuffer);
         }
 
         #endregion
@@ -103,7 +93,7 @@ namespace GPU_Algorithms.Algorithms
 
         public float[] GetOutputs()
         {
-            outputsGpu = cBuffer.GetAsArray1D();
+            outputsGpu = aBuffer.GetAsArray1D();
             return outputsGpu;
         }
 
@@ -111,9 +101,16 @@ namespace GPU_Algorithms.Algorithms
 
         #region Kernels
 
-        public static void add(Index1D index, ArrayView1D<float, Stride1D.Dense> A, ArrayView1D<float, Stride1D.Dense> B, ArrayView1D<float, Stride1D.Dense> C)
+        public static void total(Index1D index, ArrayView1D<float, Stride1D.Dense> A)
         {
-            C[index] = A[index] + B[index];
+            for (int offset = 1; offset <= A.Length; offset *= 2)
+            {
+                if (index - offset >= 0)
+                    A[index] += A[index - offset];
+
+                // wait until every thread gets through this iteration
+                Group.Barrier();
+            }
         }
 
         #endregion
@@ -122,8 +119,8 @@ namespace GPU_Algorithms.Algorithms
 
         public float[] RunCpu()
         {
-            for (int i = 0; i < inputs.Length; i++)
-                outputsCpu[i] = inputs[i] + inputs2[i];
+            for (int i = 1; i < inputs.Length; i++)
+                outputsCpu[i] = outputsCpu[i-1] + inputs[i];
 
             return outputsCpu;
         }

@@ -16,6 +16,7 @@ namespace GPU_Algorithms
     {
         // parameters
         static bool logDeviceInfo = false;
+        static bool logOutputs = true;
 
         static Context context;
         static Accelerator device;
@@ -23,7 +24,8 @@ namespace GPU_Algorithms
         static void Main(string[] args)
         {
             //IAlgorithm algorithm = new Hello();
-            IAlgorithm algorithm = new Sum();
+            //IAlgorithm algorithm = new Sum();
+            IAlgorithm algorithm = new Total();
 
             Stopwatch stopwatch = new Stopwatch();
             // time tracking
@@ -42,6 +44,7 @@ namespace GPU_Algorithms
 
                 stopwatch.Restart();
                     algorithm.InitBuffers();
+                    algorithm.Load();
                 stopwatch.Stop();
                 loadTime = stopwatch.ElapsedMilliseconds;
 
@@ -61,6 +64,13 @@ namespace GPU_Algorithms
                 stopwatch.Stop();
                 cpuTime = stopwatch.ElapsedMilliseconds;
 
+                if (logOutputs)
+                {
+                    Console.WriteLine("Gpu:");
+                    Console.WriteLine(string.Join(", ", outputs));
+                    Console.WriteLine("Cpu:");
+                    Console.WriteLine(string.Join(", ", correct));
+                }
                 Console.WriteLine(string.Format("Gpu: {0} | {1} | {2}", loadTime, runTime, readTime));
                 Console.WriteLine(string.Format("Total: {0}", loadTime + runTime + readTime));
                 Console.WriteLine("Cpu: " + cpuTime);
