@@ -70,6 +70,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Algorithms\Blocks.cs" />
+    <Compile Include="Algorithms\LargeTotal.cs" />
     <Compile Include="Algorithms\Total.cs" />
     <Compile Include="Algorithms\Sum.cs" />
     <Compile Include="Algorithms\Hello.cs" />

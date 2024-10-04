@@ -1,4 +1,7 @@
-﻿using System;
+﻿// This works, but I think it's only through luck. This algorithm violates the super important rule:
+// Don't let the output of one thread depend on the output of another thread
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;

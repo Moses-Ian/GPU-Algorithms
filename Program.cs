@@ -25,7 +25,8 @@ namespace GPU_Algorithms
         {
             //IAlgorithm algorithm = new Hello();
             //IAlgorithm algorithm = new Sum();
-            IAlgorithm algorithm = new Total();
+            //IAlgorithm algorithm = new Total();
+            IAlgorithm algorithm = new LargeTotal();
 
             Stopwatch stopwatch = new Stopwatch();
             // time tracking
